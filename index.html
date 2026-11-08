@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Addenda Multiasistencia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --ink:#1b1f24; --muted:#5d6670; --line:#dde1e6; --soft:#eef1f4;
+  --accent:#0f6b5c; --accent-ink:#ffffff; --accent-soft:#e3f2ef;
+  --err:#b42318; --err-soft:#fdecea; --warn:#9a6700; --warn-soft:#fff6db; --ok:#1a7f37; --ok-soft:#e6f4ea;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#111418; --card:#1a1e23; --ink:#e7eaee; --muted:#9aa4ae; --line:#2c333b; --soft:#222830;
+    --accent:#3fb8a2; --accent-ink:#0b1512; --accent-soft:#16302b;
+    --err:#ff7b72; --err-soft:#3a1d1b; --warn:#e3b341; --warn-soft:#352b12; --ok:#56d364; --ok-soft:#15301c; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:18px 24px}
+header h1{margin:0;font-size:20px;letter-spacing:.2px}
+header p{margin:2px 0 0;color:var(--muted);font-size:13px}
+main{max-width:1180px;margin:0 auto;padding:20px 24px 60px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px}
+@media (max-width:960px){ main{grid-template-columns:1fr} }
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:18px}
+.card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:10px}
+.step{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+.card.disabled{opacity:.55}
+.card.disabled .body{pointer-events:none}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:18px 0 8px}
+label{display:block;font-weight:600;font-size:13px;margin-bottom:4px}
+.hint{color:var(--muted);font-size:12px;font-weight:400}
+input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit}
+input[type=text]:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+input.bad{border-color:var(--err);background:var(--err-soft)}
+input.warnf{border-color:var(--warn)}
+input[readonly]{background:var(--soft);color:var(--muted)}
+input[type=file]{font:inherit;max-width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px 16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.check{display:flex;gap:8px;align-items:flex-start;font-weight:400;margin:10px 0 0}
+.check input{margin-top:3px}
+button{font:inherit;font-weight:600;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.small{padding:4px 10px;font-size:12px}
+button.link{border:none;background:none;color:var(--accent);padding:0;text-decoration:underline}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+dl.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px 18px;margin:0}
+dl.kv div{min-width:0}
+dl.kv dt{color:var(--muted);font-size:12px}
+dl.kv dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.mono{font-family:var(--mono);font-size:12px}
+pre{background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:12px;white-space:pre-wrap;word-break:break-all;font:12px/1.5 var(--mono);margin:8px 0;max-height:280px;overflow:auto}
+textarea{width:100%;min-height:160px;font:12px/1.4 var(--mono);border:1px solid var(--line);border-radius:7px;padding:10px;background:var(--soft);color:var(--ink)}
+.msgs{list-style:none;padding:0;margin:10px 0 0}
+.msgs li{border-radius:7px;padding:8px 10px;margin-bottom:6px;font-size:13px;display:flex;gap:8px;align-items:flex-start}
+.msgs li.err{background:var(--err-soft);color:var(--err)}
+.msgs li.warn{background:var(--warn-soft);color:var(--warn)}
+.msgs li.ok{background:var(--ok-soft);color:var(--ok)}
+.msgs li.info{background:var(--soft);color:var(--muted)}
+.tag{font:700 11px/1.6 var(--mono);border:1px solid currentColor;border-radius:4px;padding:0 5px;flex:none}
+.msgs b{font-weight:700}
+.vale-row{display:grid;grid-template-columns:170px 1fr 150px auto;gap:8px;align-items:center;margin-bottom:8px}
+@media (max-width:640px){ .vale-row{grid-template-columns:1fr 1fr} }
+.badge{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:12px;color:var(--muted)}
+.status{font-size:13px;margin-top:8px;color:var(--muted)}
+.status.err{color:var(--err)} .status.ok{color:var(--ok)}
+aside .card{position:relative}
+aside ul{margin:0;padding-left:18px}
+aside li{margin-bottom:6px}
+.tests li{font-size:12px}
+.hidden{display:none !important}
+.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Addenda Multiasistencia · Reparaciones</h1>
+  <p>Agrega la Addenda comercial a un CFDI 4.0 ya timbrado. La parte fiscal no se modifica: la Addenda se inserta como texto antes del cierre del Comprobante. Todo ocurre en este navegador; ningún archivo sale de tu equipo.</p>
+</header>
+
+<main>
+<div>
+  <!-- PASO 1 -->
+  <section class="card" id="paso1">
+    <h2><span class="step">1</span>Cargar archivos</h2>
+    <div class="body">
+      <div class="grid">
+        <div>
+          <label for="xmlFile">XML timbrado <span class="hint">(obligatorio, .xml, máx. 2 MB)</span></label>
+          <input type="file" id="xmlFile" accept=".xml,application/xml,text/xml">
+          <div class="status" id="xmlStatus"></div>
+        </div>
+        <div>
+          <label for="pdfFile">PDF original <span class="hint">(obligatorio para el PDF nuevo, .pdf, máx. 10 MB)</span></label>
+          <input type="file" id="pdfFile" accept=".pdf,application/pdf">
+          <div class="status" id="pdfStatus"></div>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="pdfConfirm" disabled> <span id="pdfConfirmText">Confirmo que el PDF corresponde al CFDI con UUID <span class="mono">—</span></span></label>
+      <ul class="msgs" id="cfdiMsgs"></ul>
+    </div>
+  </section>
+
+  <!-- PASO 2 -->
+  <section class="card disabled" id="paso2">
+    <h2><span class="step">2</span>Datos leídos del CFDI <span class="badge">solo lectura</span></h2>
+    <div class="body" id="cfdiCard"><p class="hint">Carga el XML timbrado para ver sus datos.</p></div>
+  </section>
+
+  <!-- PASO 3 -->
+  <section class="card" id="paso3">
+    <h2><span class="step">3</span>Captura de la Addenda</h2>
+    <div class="body">
+      <div class="row" style="justify-content:space-between">
+        <span class="hint">Los campos marcados con * son obligatorios.</span>
+        <button class="small" id="btnCaso">Cargar caso F-4481</button>
+      </div>
+
+      <h3>Valores fijos (no editables)</h3>
+      <div class="grid">
+        <div><label>Version</label><input type="text" value="1.0" readonly></div>
+        <div><label>Tipo</label><input type="text" value="Reparaciones" readonly></div>
+        <div><label>SubTotal <span class="hint">(del CFDI)</span></label><input type="text" id="fxSubTotal" readonly></div>
+        <div><label>IVA <span class="hint">(del CFDI)</span></label><input type="text" id="fxIVA" readonly></div>
+        <div><label>Total <span class="hint">(del CFDI)</span></label><input type="text" id="fxTotal" readonly></div>
+      </div>
+
+      <h3>Datos generales</h3>
+      <div class="grid">
+        <div>
+          <label for="f_proveedor">Clave de proveedor *</label>
+          <input type="text" id="f_proveedor" data-key="proveedor" autocomplete="off">
+          <div class="hint" id="provHint"></div>
+        </div>
+        <div>
+          <label for="f_siniestro">Número de siniestro *</label>
+          <input type="text" id="f_siniestro" data-key="siniestro" autocomplete="off">
+          <div id="sinSug" class="hint"></div>
+        </div>
+        <div>
+          <label for="f_ordenPago">Orden de pago <span class="hint">(opcional; vacío = se omite)</span></label>
+          <input type="text" id="f_ordenPago" data-key="ordenPago" autocomplete="off">
+        </div>
+      </div>
+
+      <h3>Valuación inicial</h3>
+      <div class="grid">
+        <div>
+          <label for="f_numValuacion">Número de valuación inicial *</label>
+          <input type="text" id="f_numValuacion" data-key="numValuacion" autocomplete="off">
+        </div>
+        <div>
+          <label for="f_costoValuacion">Costo de valuación inicial * <span class="hint">(antes de impuestos)</span></label>
+          <input type="text" id="f_costoValuacion" data-key="costoValuacion" inputmode="decimal" autocomplete="off" placeholder="0.00">
+        </div>
+      </div>
+
+      <h3>Vales <span class="badge" id="valeCount">Refacciones 0/10 · Complemento MO 0/10</span></h3>
+      <div id="vales"></div>
+      <button class="small" id="btnAddVale">+ Agregar vale</button>
+      <p class="hint">En el XML se escriben primero todos los vales de Refacciones y después todos los de Complemento MO, sin importar el orden de captura.</p>
+
+      <h3>Opciones</h3>
+      <label class="check"><input type="checkbox" id="optSchema" checked> <span>Incluir <span class="mono">xsi:schemaLocation</span> <span class="hint">(valor fijo del ejemplo real)</span></span></label>
+      <label class="check"><input type="checkbox" id="optSumErr"> <span>Tratar la regla de suma (V9) como error <span class="hint">(por defecto es advertencia)</span></span></label>
+
+      <hr class="sep">
+      <details>
+        <summary><b>Tabla de claves de proveedor</b> <span class="hint">RFC emisor → clave (solo en memoria)</span></summary>
+        <table id="provTable" style="margin-top:8px"><thead><tr><th>RFC emisor</th><th>Clave</th><th></th></tr></thead><tbody></tbody></table>
+        <button class="small" id="btnAddProv" style="margin-top:8px">+ Agregar RFC</button>
+        <div style="margin-top:12px;max-width:320px">
+          <label for="cfgRfcMA">RFC de Multiasistencia (receptor esperado)</label>
+          <input type="text" id="cfgRfcMA" value="MUL9607165C5">
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- PASO 4 -->
+  <section class="card" id="paso4">
+    <h2><span class="step">4</span>Validar y generar</h2>
+    <div class="body">
+      <div class="row">
+        <button id="btnValidar">Validar</button>
+        <button class="primary" id="btnGenerar" disabled>Generar XML y PDF</button>
+        <span class="hint" id="genHint">Valida primero; Generar se habilita si no hay errores.</span>
+      </div>
+      <ul class="msgs" id="valMsgs"></ul>
+
+      <div id="fragBox" class="hidden">
+        <h3>Fragmento &lt;cfdi:Addenda&gt;</h3>
+        <pre id="fragPre"></pre>
+        <button class="small" id="btnCopyFrag">Copiar</button> <span class="hint" id="copyFragMsg"></span>
+      </div>
+
+      <div id="outBox" class="hidden">
+        <h3>Archivos generados</h3>
+        <ul class="msgs" id="postMsgs"></ul>
+        <div class="row" style="margin-top:8px">
+          <button class="primary" id="btnDlXml">Descargar XML</button>
+          <button id="btnOpenXml">Abrir XML en pestaña nueva</button>
+          <button class="primary" id="btnDlPdf" disabled>Descargar PDF</button>
+          <button id="btnOpenPdf" disabled>Abrir PDF en pestaña nueva</button>
+        </div>
+        <div class="status" id="dlMsg"></div>
+        <h3>XML resultante <span class="hint" id="outName"></span></h3>
+        <textarea id="outXml" readonly spellcheck="false"></textarea>
+        <button class="small" id="btnCopyXml">Copiar XML</button> <span class="hint" id="copyXmlMsg"></span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<aside>
+  <section class="card">
+    <h2>Pendientes con Multiasistencia</h2>
+    <ul>
+      <li><b>Q1</b> XSD oficial.</li>
+      <li><b>Q3</b> qué enviar en solo refacciones.</li>
+      <li><b>Q6</b> regla de suma.</li>
+      <li><b>Q2</b> schemaLocation.</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>Autopruebas</h2>
+    <p class="hint" style="margin-top:0">Ejecuta A1–A17 en memoria. A1 usa un XML mínimo embebido; si cargaste el XML de F-4481, también se prueba contra ese archivo.</p>
+    <button id="btnTests">Ejecutar autopruebas</button>
+    <div class="status" id="testSummary"></div>
+    <ul class="msgs tests" id="testList"></ul>
+  </section>
+  <section class="card">
+    <h2>Alcance</h2>
+    <ul class="hint">
+      <li>Solo giro Reparaciones, CFDI de Ingreso 4.0 timbrado.</li>
+      <li>No se generan IVARet, ISRRet, ImpCedular ni Retencion.</li>
+      <li>No timbra, no cancela, no valida sellos ni consulta al SAT.</li>
+    </ul>
+  </section>
+</aside>
+</main>
+
+<script>
+/*CORE-START*/
+'use strict';
+const NS = {
+  cfdi: 'http://www.sat.gob.mx/cfd/4',
+  tfd: 'http://www.sat.gob.mx/TimbreFiscalDigital',
+  ma: 'http://www.diverza.com/ns/addenda/multiasistencia/1',
+  xsi: 'http://www.w3.org/2001/XMLSchema-instance',
+  xmlns: 'http://www.w3.org/2000/xmlns/'
+};
+const SCHEMA_LOCATION = 'http://www.diverza.com/ns/addenda/multiasistencia/1 http://www.oficinaweb.mx/schema/Addenda/multiasistencia.xsd';
+const DEFAULT_RFC_MA = 'MUL9607165C5';
+const MAX_VALES = 10;
+const MAX_XML_BYTES = 2 * 1024 * 1024;
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const IMPORTE_RE = /^\d{1,15}(\.\d{1,2})?$/;
+const IMPORTE_XML_RE = /^\d+\.\d{2}$/;
+const CONTROL_RE = /[\u0000-\u001F]/;
+const XML_WS_RE = /^[ \t\r\n]*$/;
+const SINIESTRO_RE = /SINIESTRO\s*:\s*(\S+)/;
+const TIPO_LABEL = { R: 'Refacciones', MO: 'Complemento MO' };
+
+// §6 — importes como centavos enteros (BigInt)
+function toCents(raw, { allowExtraZeros = false } = {}) {
+  const s = String(raw ?? '').trim();
+  const m = /^(\d+)(?:\.(\d+))?$/.exec(s);
+  if (!m) return null;
+  let frac = m[2] ?? '';
+  if (allowExtraZeros) frac = frac.replace(/0+$/, '');
+  if (frac.length > 2) return null;
+  return BigInt(m[1]) * 100n + BigInt((frac + '00').slice(0, 2));
+}
+function fmt(c) { const s = c.toString().padStart(3, '0'); return `${s.slice(0, -2)}.${s.slice(-2)}`; }
+function fmtMoney(c) {
+  if (c === null || c === undefined) return '—';
+  const neg = c < 0n; const s = fmt(neg ? -c : c);
+  const [i, d] = s.split('.');
+  return (neg ? '-' : '') + '$' + i.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + d;
+}
+function escAttr(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function issue(id, campo, msg, key) { return { id, campo, msg, key: key || null }; }
+
+function decodeXmlBytes(buf) {
+  try { return { text: new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(buf) }; }
+  catch (e) { return { error: 'El XML no es UTF-8 válido' }; }
+}
+// DOM solo para LEER. Nunca se serializa.
+function parseXml(text) {
+  const t = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+  let doc;
+  try { doc = new DOMParser().parseFromString(t, 'application/xml'); } catch (e) { return null; }
+  if (!doc || !doc.documentElement) return null;
+  if (doc.documentElement.localName === 'parsererror' || doc.getElementsByTagName('parsererror').length) return null;
+  return doc;
+}
+function childEls(el, ns, local) {
+  const out = [];
+  if (!el) return out;
+  for (const n of el.childNodes) if (n.nodeType === 1 && n.namespaceURI === ns && n.localName === local) out.push(n);
+  return out;
+}
+function elementChildren(el) { const out = []; for (const n of el.childNodes) if (n.nodeType === 1) out.push(n); return out; }
+function attr(el, name) { return el && el.hasAttribute(name) ? el.getAttribute(name) : ''; }
+function declaresXsi(root) {
+  let v = null;
+  try { v = root.getAttributeNS(NS.xmlns, 'xsi'); } catch (e) { /* noop */ }
+  if (!v) v = root.getAttribute('xmlns:xsi');
+  return v === NS.xsi;
+}
+
+// §3 — lectura y prevalidaciones del CFDI
+function analyzeCfdi(sourceText, { rfcMultiasistencia = DEFAULT_RFC_MA } = {}) {
+  const r = { errors: [], warnings: [], data: null };
+  const doc = parseXml(sourceText);
+  if (!doc) { r.errors.push(issue('XML', 'Archivo XML', 'XML mal formado')); return r; }
+  const root = doc.documentElement;
+  if (!(root.namespaceURI === NS.cfdi && root.localName === 'Comprobante' && root.getAttribute('Version') === '4.0')) {
+    r.errors.push(issue('C1', 'Comprobante/@Version', 'No es un CFDI 4.0')); return r;
+  }
+  if (root.getAttribute('TipoDeComprobante') !== 'I') r.errors.push(issue('C2', 'Comprobante/@TipoDeComprobante', 'Solo se admiten CFDI de Ingreso'));
+  let tfd = null;
+  for (const c of childEls(root, NS.cfdi, 'Complemento')) {
+    for (const t of childEls(c, NS.tfd, 'TimbreFiscalDigital')) if (t.getAttribute('UUID')) { tfd = t; break; }
+    if (tfd) break;
+  }
+  if (!tfd) r.errors.push(issue('C3', 'Complemento/TimbreFiscalDigital', 'El CFDI no está timbrado'));
+  if (childEls(root, NS.cfdi, 'Addenda').length) r.errors.push(issue('C4', 'cfdi:Addenda', 'El CFDI ya contiene una Addenda'));
+
+  const rootPrefix = root.prefix || null;
+  const closeTag = rootPrefix ? `</${rootPrefix}:Comprobante>` : '</Comprobante>';
+  const closeIdx = sourceText.lastIndexOf(closeTag);
+  if (closeIdx < 0 || !XML_WS_RE.test(sourceText.slice(closeIdx + closeTag.length))) {
+    r.errors.push(issue('C6', closeTag, 'No se encontró el cierre del Comprobante'));
+  }
+
+  const emisor = childEls(root, NS.cfdi, 'Emisor')[0];
+  const receptor = childEls(root, NS.cfdi, 'Receptor')[0];
+  const receptorRfc = attr(receptor, 'Rfc');
+  if (receptorRfc.trim().toUpperCase() !== String(rfcMultiasistencia || '').trim().toUpperCase()) {
+    r.warnings.push(issue('C5', 'Receptor/@Rfc', `El receptor no es Multiasistencia (RFC ${receptorRfc || 'vacío'}; se esperaba ${rfcMultiasistencia})`));
+  }
+
+  const subtotalRaw = root.getAttribute('SubTotal');
+  const totalRaw = root.getAttribute('Total');
+  const subtotal = subtotalRaw === null ? null : toCents(subtotalRaw, { allowExtraZeros: true });
+  const total = totalRaw === null ? null : toCents(totalRaw, { allowExtraZeros: true });
+
+  // IVA: solo Impuestos hijo directo de la raíz
+  let iva = null;
+  const imp = childEls(root, NS.cfdi, 'Impuestos')[0];
+  const tras = imp ? childEls(imp, NS.cfdi, 'Traslados')[0] : null;
+  if (tras) {
+    for (const t of childEls(tras, NS.cfdi, 'Traslado')) {
+      if (t.getAttribute('Impuesto') !== '002' || !t.hasAttribute('Importe')) continue;
+      const c = toCents(t.getAttribute('Importe'), { allowExtraZeros: true });
+      if (c === null) { r.errors.push(issue('IMP', 'Impuestos/Traslados/Traslado/@Importe', `Importe de IVA inválido o con más de 2 decimales significativos: "${t.getAttribute('Importe')}"`)); continue; }
+      iva = (iva ?? 0n) + c;
+    }
+  }
+
+  const conceptos = [];
+  let siniestroSugerido = null;
+  const cs = childEls(root, NS.cfdi, 'Conceptos')[0];
+  for (const c of childEls(cs, NS.cfdi, 'Concepto')) {
+    const raw = attr(c, 'Importe');
+    const cents = toCents(raw, { allowExtraZeros: true });
+    const desc = attr(c, 'Descripcion');
+    if (cents === null) r.errors.push(issue('IMP', `Concepto ${attr(c, 'NoIdentificacion') || conceptos.length + 1}/@Importe`, `Importe inválido o con más de 2 decimales significativos: "${raw}"`));
+    if (!siniestroSugerido) { const m = SINIESTRO_RE.exec(desc); if (m) siniestroSugerido = m[1]; }
+    conceptos.push({ noId: attr(c, 'NoIdentificacion'), desc, importeRaw: raw, importe: cents });
+  }
+
+  r.data = {
+    serie: attr(root, 'Serie'), folio: attr(root, 'Folio'), fecha: attr(root, 'Fecha'), moneda: attr(root, 'Moneda'),
+    sello: attr(root, 'Sello'),
+    uuid: attr(tfd, 'UUID'), fechaTimbrado: attr(tfd, 'FechaTimbrado'), selloSAT: attr(tfd, 'SelloSAT'),
+    emisorRfc: attr(emisor, 'Rfc'), emisorNombre: attr(emisor, 'Nombre'),
+    receptorRfc, receptorNombre: attr(receptor, 'Nombre'),
+    subtotalRaw, totalRaw, subtotal, total, iva,
+    conceptos, siniestroSugerido,
+    rootPrefix, closeTag, closeIdx, rootDeclaresXsi: declaresXsi(root)
+  };
+  return r;
+}
+
+function normalizeForm(f) {
+  const t = v => String(v ?? '').trim();
+  return {
+    proveedor: t(f.proveedor), siniestro: t(f.siniestro), ordenPago: t(f.ordenPago),
+    numValuacion: t(f.numValuacion), costoValuacion: t(f.costoValuacion),
+    vales: (f.vales || []).map(v => ({ tipo: v.tipo === 'MO' ? 'MO' : 'R', numero: t(v.numero), costo: t(v.costo) })),
+    includeSchemaLocation: f.includeSchemaLocation !== false,
+    sumAsError: !!f.sumAsError
+  };
+}
+
+// §5.1 — validaciones
+function validateForm(analysis, form) {
+  const n = normalizeForm(form);
+  const errors = [...analysis.errors];
+  const warnings = [];
+  const d = analysis.data;
+  const valeLbl = (i, v, k) => `Vale ${i + 1} (${TIPO_LABEL[v.tipo]}) · ${k}`;
+
+  const texts = [
+    ['proveedor', 'Clave de proveedor', n.proveedor, true],
+    ['siniestro', 'Número de siniestro', n.siniestro, true],
+    ['ordenPago', 'Orden de pago', n.ordenPago, false],
+    ['numValuacion', 'Número de valuación inicial', n.numValuacion, true],
+    ['costoValuacion', 'Costo de valuación inicial', n.costoValuacion, true]
+  ];
+  n.vales.forEach((v, i) => {
+    texts.push([`vale-${i}-numero`, valeLbl(i, v, 'Número'), v.numero, true]);
+    texts.push([`vale-${i}-costo`, valeLbl(i, v, 'Costo'), v.costo, true]);
+  });
+  for (const [key, campo, val, req] of texts) {
+    if (req && !val) errors.push(issue('V1', campo, 'Campo requerido', key));
+    if (CONTROL_RE.test(val)) errors.push(issue('V4', campo, 'Contiene caracteres de control (U+0000–U+001F)', key));
+    else if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]|[￾￿]/.test(val)) errors.push(issue('V4', campo, 'Contiene caracteres no válidos en XML', key));
+  }
+  const money = [['costoValuacion', 'Costo de valuación inicial', n.costoValuacion]];
+  n.vales.forEach((v, i) => money.push([`vale-${i}-costo`, valeLbl(i, v, 'Costo'), v.costo]));
+  const cents = {};
+  for (const [key, campo, val] of money) {
+    if (!val) continue;
+    if (!IMPORTE_RE.test(val)) errors.push(issue('V2', campo, `Importe inválido "${val}": solo dígitos y hasta 2 decimales, sin comas, signo ni notación científica`, key));
+    else cents[key] = toCents(val);
+  }
+  for (const tipo of ['R', 'MO']) {
+    const c = n.vales.filter(v => v.tipo === tipo).length;
+    if (c > MAX_VALES) errors.push(issue('V3', `Vales de ${TIPO_LABEL[tipo]}`, `Hay ${c} vales; el máximo es ${MAX_VALES}`));
+  }
+  if (!d || d.subtotal === null || d.total === null) {
+    errors.push(issue('V5', 'CFDI SubTotal/Total', 'El CFDI no tiene SubTotal o Total válidos'));
+  }
+  if (cents.costoValuacion === 0n) warnings.push(issue('V6', 'Costo de valuación inicial', 'Costo = 0.00. Pendiente de confirmar con Multiasistencia qué se envía en proveedores de solo refacciones (Q3)', 'costoValuacion'));
+  for (const tipo of ['R', 'MO']) {
+    const seen = new Map();
+    n.vales.forEach((v, i) => {
+      if (v.tipo !== tipo || !v.numero) return;
+      if (seen.has(v.numero)) warnings.push(issue('V7', valeLbl(i, v, 'Número'), `Número de vale duplicado "${v.numero}" (igual al vale ${seen.get(v.numero) + 1})`, `vale-${i}-numero`));
+      else seen.set(v.numero, i);
+    });
+  }
+  if (d && d.iva === null) warnings.push(issue('V8', 'CFDI IVA', 'El CFDI no tiene IVA trasladado; se omite @IVA'));
+  const allMoneyOk = money.every(([key, , val]) => val && cents[key] !== undefined);
+  if (d && d.subtotal !== null && allMoneyOk) {
+    let sum = cents.costoValuacion;
+    n.vales.forEach((v, i) => { sum += cents[`vale-${i}-costo`]; });
+    if (sum !== d.subtotal) {
+      const it = issue('V9', 'Costo valuación + Σ vales', `La suma ${fmtMoney(sum)} no coincide con el SubTotal del CFDI ${fmtMoney(d.subtotal)} (diferencia ${fmtMoney(sum - d.subtotal)}). Regla observada en todos los ejemplos, no documentada (Q6)`);
+      (n.sumAsError ? errors : warnings).push(it);
+    }
+  }
+  for (const w of analysis.warnings) if (w.id === 'C5') warnings.push(issue('V10', w.campo, w.msg));
+  return { errors, warnings, norm: n };
+}
+
+// §7 — fragmento XML (una sola línea, orden fijo de atributos)
+function buildFragment(d, n) {
+  const p = d.rootPrefix ? d.rootPrefix + ':' : '';
+  let a = '';
+  if (n.includeSchemaLocation) a += ` xsi:schemaLocation="${escAttr(SCHEMA_LOCATION)}"`;
+  a += ` xmlns:ma="${NS.ma}"`;
+  if (n.includeSchemaLocation && !d.rootDeclaresXsi) a += ` xmlns:xsi="${NS.xsi}"`;
+  a += ` Version="1.0" Tipo="Reparaciones" Proveedor="${escAttr(n.proveedor)}" Siniestro="${escAttr(n.siniestro)}" SubTotal="${fmt(d.subtotal)}"`;
+  if (d.iva !== null) a += ` IVA="${fmt(d.iva)}"`;
+  a += ` Total="${fmt(d.total)}"`;
+  if (n.ordenPago) a += ` OrdenPago="${escAttr(n.ordenPago)}"`;
+  const vale = (el, v) => `<ma:${el} Numero="${escAttr(v.numero)}" Costo="${fmt(toCents(v.costo))}" />`;
+  const vales = n.vales.filter(v => v.tipo === 'R').map(v => vale('ValeRefacciones', v)).join('')
+              + n.vales.filter(v => v.tipo === 'MO').map(v => vale('ValeComplementoMO', v)).join('');
+  const repAttrs = `NumValuacionInicial="${escAttr(n.numValuacion)}" Costo="${fmt(toCents(n.costoValuacion))}"`;
+  const rep = vales ? `<ma:Reparaciones ${repAttrs}>${vales}</ma:Reparaciones>` : `<ma:Reparaciones ${repAttrs} />`;
+  return `<${p}Addenda><ma:Multiasistencia${a}>${rep}</ma:Multiasistencia></${p}Addenda>`;
+}
+
+function bytesEqual(a, aOff, b, bOff, len) {
+  if (aOff < 0 || bOff < 0 || aOff + len > a.length || bOff + len > b.length) return false;
+  for (let i = 0; i < len; i++) if (a[aOff + i] !== b[bOff + i]) return false;
+  return true;
+}
+
+// §8 — inserción como texto + poschecks P1–P5
+function insertAddenda(sourceText, d, fragment, originalBytes) {
+  const errors = [];
+  const idx = sourceText.lastIndexOf(d.closeTag);
+  if (idx < 0) return { output: null, errors: [issue('C6', d.closeTag, 'No se encontró el cierre del Comprobante')] };
+  const output = sourceText.slice(0, idx) + fragment + sourceText.slice(idx);
+
+  // P1 — texto y bytes idénticos antes y después del punto de inserción
+  let p1 = output.slice(0, idx) === sourceText.slice(0, idx) && output.endsWith(sourceText.slice(idx));
+  const enc = new TextEncoder();
+  const outBytes = enc.encode(output);
+  if (p1 && originalBytes) {
+    const head = enc.encode(sourceText.slice(0, idx)).length;
+    const fragLen = enc.encode(fragment).length;
+    const tail = originalBytes.length - head;
+    p1 = outBytes.length === originalBytes.length + fragLen
+      && bytesEqual(outBytes, 0, originalBytes, 0, head)
+      && bytesEqual(outBytes, head + fragLen, originalBytes, head, tail);
+  }
+  if (!p1) errors.push(issue('P1', 'Parte fiscal', 'La parte fiscal no quedó idéntica byte a byte'));
+
+  // P2 — bien formado
+  const doc = parseXml(output);
+  if (!doc) { errors.push(issue('P2', 'XML resultante', 'El XML resultante está mal formado')); return { output, outBytes, errors }; }
+  const root = doc.documentElement;
+
+  // P3 — UUID, Sello y SelloSAT sin cambio
+  let tfd = null;
+  for (const c of childEls(root, NS.cfdi, 'Complemento')) { tfd = childEls(c, NS.tfd, 'TimbreFiscalDigital')[0] || null; if (tfd) break; }
+  if (attr(tfd, 'UUID') !== d.uuid || attr(root, 'Sello') !== d.sello || attr(tfd, 'SelloSAT') !== d.selloSAT) {
+    errors.push(issue('P3', 'UUID / Sello / SelloSAT', 'El UUID, Sello o SelloSAT del resultado difieren del original'));
+  }
+
+  // P4 — revalidación estructural
+  const adds = childEls(root, NS.cfdi, 'Addenda');
+  const add = adds[adds.length - 1];
+  const p4 = [];
+  const mas = add ? elementChildren(add) : [];
+  if (mas.length !== 1 || mas[0].namespaceURI !== NS.ma || mas[0].localName !== 'Multiasistencia') p4.push('Addenda debe contener exactamente un ma:Multiasistencia en el namespace correcto');
+  else {
+    const m = mas[0];
+    const ga = n => m.getAttributeNS(null, n);
+    if (ga('Version') !== '1.0') p4.push('Version debe ser "1.0"');
+    if (ga('Tipo') !== 'Reparaciones') p4.push('Tipo debe ser "Reparaciones"');
+    for (const k of ['Proveedor', 'Siniestro', 'SubTotal', 'Total']) if (!ga(k)) p4.push(`Falta el atributo ${k}`);
+    for (const k of ['SubTotal', 'IVA', 'Total']) if (m.hasAttribute(k) && !IMPORTE_XML_RE.test(ga(k))) p4.push(`${k} sin formato 0.00`);
+    if (ga('SubTotal') !== fmt(d.subtotal) || ga('Total') !== fmt(d.total) || (d.iva !== null ? ga('IVA') !== fmt(d.iva) : m.hasAttribute('IVA'))) p4.push('SubTotal/IVA/Total no coinciden con el CFDI');
+    const reps = elementChildren(m);
+    if (reps.length !== 1 || reps[0].namespaceURI !== NS.ma || reps[0].localName !== 'Reparaciones') p4.push('Debe haber exactamente un ma:Reparaciones');
+    else {
+      const rep = reps[0];
+      if (!rep.getAttributeNS(null, 'NumValuacionInicial')) p4.push('Falta NumValuacionInicial');
+      if (!IMPORTE_XML_RE.test(rep.getAttributeNS(null, 'Costo') || '')) p4.push('Reparaciones/@Costo sin formato 0.00');
+      let phase = 0, cr = 0, cmo = 0;
+      for (const v of elementChildren(rep)) {
+        const ok = v.namespaceURI === NS.ma;
+        if (ok && v.localName === 'ValeRefacciones') { if (phase === 1) p4.push('ValeRefacciones después de ValeComplementoMO'); cr++; }
+        else if (ok && v.localName === 'ValeComplementoMO') { phase = 1; cmo++; }
+        else { p4.push(`Elemento no permitido: ${v.nodeName}`); continue; }
+        if (!v.getAttributeNS(null, 'Numero')) p4.push(`${v.localName} sin Numero`);
+        if (!IMPORTE_XML_RE.test(v.getAttributeNS(null, 'Costo') || '')) p4.push(`${v.localName}/@Costo sin formato 0.00`);
+      }
+      if (cr > MAX_VALES || cmo > MAX_VALES) p4.push('Más de 10 vales de un mismo tipo');
+    }
+  }
+  for (const m of p4) errors.push(issue('P4', 'ma:Multiasistencia', m));
+
+  // P5 — Addenda es el último hijo elemento de la raíz
+  const kids = elementChildren(root);
+  const lastK = kids[kids.length - 1];
+  if (!lastK || lastK.namespaceURI !== NS.cfdi || lastK.localName !== 'Addenda' || adds.length !== 1) {
+    errors.push(issue('P5', 'cfdi:Addenda', 'La Addenda no es el último hijo elemento del Comprobante'));
+  }
+  return { output, outBytes, errors };
+}
+
+function fileBase(d) {
+  let b;
+  if (d.serie && d.folio) b = `${d.serie}-${d.folio}`;
+  else if (d.serie || d.folio) b = d.serie || d.folio;
+  else b = d.uuid || 'CFDI';
+  b = b.replace(/[\\/:*?"<>|\u0000-\u001F]/g, '_');
+  return `${b} MULTIASISTENCIA ADDENDA`;
+}
+
+// §9 — PDF: original intacto + hoja(s) de Addenda
+const WINANSI_EXTRA = new Set([0x20AC,0x201A,0x0192,0x201E,0x2026,0x2020,0x2021,0x02C6,0x2030,0x0160,0x2039,0x0152,0x017D,0x2018,0x2019,0x201C,0x201D,0x2022,0x2013,0x2014,0x02DC,0x2122,0x0161,0x203A,0x0153,0x017E,0x0178]);
+function sanitizeWinAnsi(s) {
+  let out = '';
+  for (const ch of String(s ?? '')) {
+    const cp = ch.codePointAt(0);
+    if (cp === 0x09 || cp === 0x0A || cp === 0x0D) out += ' ';
+    else if ((cp >= 0x20 && cp <= 0x7E) || (cp >= 0xA1 && cp <= 0xFF && cp !== 0xAD) || WINANSI_EXTRA.has(cp)) out += ch;
+    else if (cp === 0xA0) out += ' ';
+    else out += '?';
+  }
+  return out;
+}
+
+async function buildPdf(PDFLib, originalBytes, d, n) {
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  let doc;
+  try { doc = await PDFDocument.load(originalBytes); }
+  catch (e) { throw new Error('No se pudo abrir el PDF original (¿está protegido?)' + (e && e.message ? ` · Detalle: ${e.message}` : '')); }
+  const originalCount = doc.getPageCount();
+  const pages = doc.getPages();
+  const size = pages.length ? pages[pages.length - 1].getSize() : { width: 612, height: 792 };
+  const W = size.width, H = size.height, M = 40, FOOT = 30;
+  const left = M, right = W - M, cw = right - left;
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const ink = rgb(0.1, 0.12, 0.14), gray = rgb(0.42, 0.45, 0.49), rule = rgb(0.82, 0.84, 0.87);
+  const S = 9, LH = 13.5;
+  let page = null, y = 0, pageNo = 0;
+  const T = s => sanitizeWinAnsi(s);
+  const tw = (s, f, z) => f.widthOfTextAtSize(s, z);
+  const draw = (s, x, yy, f, z, c) => page.drawText(s, { x, y: yy, size: z, font: f, color: c || ink });
+
+  function footer() {
+    draw(T('Esta hoja forma parte de la Addenda comercial. No modifica el CFDI.'), left, M + 9, font, 7, gray);
+    draw(T(`Los datos fiscales válidos son los del XML con UUID ${d.uuid}.`), left, M, font, 7, gray);
+  }
+  function newPage() {
+    page = doc.addPage([W, H]); pageNo++;
+    y = H - M - 16;
+    draw(T('ADDENDA MULTIASISTENCIA' + (pageNo > 1 ? ' (continuación)' : '')), left, y, bold, 16);
+    y -= 15;
+    draw(T('Información comercial no fiscal anexa al CFDI'), left, y, font, 9, gray);
+    y -= 10;
+    page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.8, color: rule });
+    y -= 8;
+    footer();
+  }
+  function ensure(h) { if (y - h < M + FOOT) newPage(); }
+  function wrap(s, f, z, maxW) {
+    const words = s.split(' '); const lines = []; let cur = '';
+    const push = w => {
+      while (tw(w, f, z) > maxW) { let k = w.length; while (k > 1 && tw(w.slice(0, k), f, z) > maxW) k--; lines.push(w.slice(0, k)); w = w.slice(k); }
+      return w;
+    };
+    for (const w of words) {
+      const cand = cur ? cur + ' ' + w : w;
+      if (tw(cand, f, z) <= maxW) cur = cand;
+      else { if (cur) lines.push(cur); cur = push(w); }
+    }
+    lines.push(cur);
+    return lines;
+  }
+  function section(title) {
+    ensure(LH * 3);
+    y -= 10;
+    draw(T(title), left, y, bold, 11);
+    y -= LH + 2;
+  }
+  // Pares etiqueta: valor en flujo horizontal
+  function flow(items) {
+    const GAP = 18; const ind = 10;
+    let x = left + ind;
+    ensure(LH); y -= 0;
+    let lineY = y;
+    for (const [lab, val] of items) {
+      const L = T(lab + ': '), V = T(val);
+      const lw = tw(L, bold, S), vw = tw(V, font, S);
+      if (x > left + ind && x + lw + vw > right) { y -= LH; ensure(LH); x = left + ind; lineY = y; }
+      if (lw + vw > cw - ind) {
+        draw(L, x, y, bold, S);
+        const lines = wrap(V, font, S, right - (x + lw));
+        lines.forEach((ln, i) => { if (i > 0) { y -= LH; ensure(LH); } draw(ln, x + lw, y, font, S); });
+        y -= LH; ensure(LH); x = left + ind; lineY = y; continue;
+      }
+      draw(L, x, y, bold, S); draw(V, x + lw, y, font, S);
+      x += lw + vw + GAP;
+    }
+    if (x > left + ind || lineY !== y) y -= LH;
+  }
+
+  newPage();
+  section('Datos del CFDI (solo referencia)');
+  const sf = d.serie || d.folio ? [d.serie, d.folio].filter(Boolean).join('-') : '—';
+  flow([['Serie-Folio', sf], ['UUID', d.uuid], ['Fecha timbrado', d.fechaTimbrado || '—']]);
+  flow([['Emisor', `${d.emisorRfc} – ${d.emisorNombre}`], ['Receptor', `${d.receptorRfc} – ${d.receptorNombre}`]]);
+
+  section('Datos generales');
+  const gen = [['Versión', '1.0'], ['Tipo', 'Reparaciones'], ['Proveedor', n.proveedor], ['Siniestro', n.siniestro]];
+  if (n.ordenPago) gen.push(['Orden de pago', n.ordenPago]);
+  flow(gen);
+  const tot = [['SubTotal', fmtMoney(d.subtotal)]];
+  if (d.iva !== null) tot.push(['IVA', fmtMoney(d.iva)]);
+  tot.push(['Total', fmtMoney(d.total)]);
+  flow(tot);
+
+  section('Valuación inicial');
+  const costoVal = toCents(n.costoValuacion);
+  flow([['Número', n.numValuacion], ['Costo', fmtMoney(costoVal)]]);
+
+  section('Vales');
+  const colTipo = left + 10, colNum = left + 150, colCosto = right;
+  function tableHead() {
+    ensure(LH * 2);
+    draw('Tipo', colTipo, y, bold, S); draw(T('Número'), colNum, y, bold, S);
+    draw('Costo', colCosto - tw('Costo', bold, S), y, bold, S);
+    y -= 4; page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.5, color: rule }); y -= LH - 4;
+  }
+  const ordered = [...n.vales.filter(v => v.tipo === 'R'), ...n.vales.filter(v => v.tipo === 'MO')];
+  let sum = costoVal;
+  if (!ordered.length) { draw('Sin vales capturados.', colTipo, y, font, S, gray); y -= LH; }
+  else {
+    tableHead();
+    for (const v of ordered) {
+      const before = pageNo; ensure(LH); if (pageNo !== before) { section('Vales (continuación)'); tableHead(); }
+      const c = toCents(v.costo); sum += c;
+      const numLines = wrap(T(v.numero), font, S, colCosto - 90 - colNum);
+      draw(T(TIPO_LABEL[v.tipo]), colTipo, y, font, S);
+      numLines.forEach((ln, i) => { if (i) { y -= LH; ensure(LH); } draw(ln, colNum, y, font, S); });
+      const cs = fmtMoney(c);
+      draw(cs, colCosto - tw(cs, font, S), y + (numLines.length - 1) * LH, font, S);
+      y -= LH;
+    }
+  }
+  ensure(LH * 2);
+  y -= 2; page.drawLine({ start: { x: right - 200, y: y + LH - 3 }, end: { x: right, y: y + LH - 3 }, thickness: 0.5, color: rule });
+  const sl = 'Suma de costos: ', sv = fmtMoney(sum);
+  draw(sl, colCosto - tw(sv, bold, S) - tw(sl, font, S), y, font, S);
+  draw(sv, colCosto - tw(sv, bold, S), y, bold, S);
+
+  const base = fileBase(d);
+  doc.setTitle(base);
+  doc.setProducer('Addenda Multiasistencia');
+  const bytes = await doc.save();
+  // poscheck: páginas originales + agregadas
+  const re = await PDFDocument.load(bytes);
+  if (re.getPageCount() !== originalCount + pageNo) throw new Error('El PDF generado no conserva el número de páginas esperado');
+  return { bytes, originalCount, added: pageNo };
+}
+
+// §10 — autopruebas
+const GOLDEN_FRAGMENT = '<cfdi:Addenda><ma:Multiasistencia xsi:schemaLocation="http://www.diverza.com/ns/addenda/multiasistencia/1 http://www.oficinaweb.mx/schema/Addenda/multiasistencia.xsd" xmlns:ma="http://www.diverza.com/ns/addenda/multiasistencia/1" Version="1.0" Tipo="Reparaciones" Proveedor="10187" Siniestro="B78349761" SubTotal="11071.89" IVA="1771.50" Total="12843.39" OrdenPago="1"><ma:Reparaciones NumValuacionInicial="B7834976100A" Costo="8091.89"><ma:ValeRefacciones Numero="3477802" Costo="2200.00" /><ma:ValeComplementoMO Numero="373054" Costo="780.00" /></ma:Reparaciones></ma:Multiasistencia></cfdi:Addenda>';
+const TEST_UUID = '00000000-0000-4000-8000-000000000000';
+function casoF4481() {
+  return { proveedor: '10187', siniestro: 'B78349761', ordenPago: '1', numValuacion: 'B7834976100A', costoValuacion: '8091.89',
+    vales: [{ tipo: 'R', numero: '3477802', costo: '2200.00' }, { tipo: 'MO', numero: '373054', costo: '780.00' }],
+    includeSchemaLocation: true, sumAsError: false };
+}
+function mkTestXml(o = {}) {
+  const { xsiRoot = true, tfd = true, addenda = false, desc = 'Ruedas y acabados&#xA;&#xA;SINIESTRO : B78349761&#xA;EXPEDIENTE: 13677' } = o;
+  return '<?xml version="1.0" encoding="utf-8"?><cfdi:Comprobante'
+    + (xsiRoot ? ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd"' : '')
+    + ' Version="4.0" Serie="F" Folio="4481" Fecha="2026-10-12T12:18:59" Sello="SELLO-PRUEBA" SubTotal="11071.89" Moneda="MXN" Total="12843.39" TipoDeComprobante="I" xmlns:cfdi="http://www.sat.gob.mx/cfd/4">'
+    + '<cfdi:Emisor Rfc="AAA010101AAA" Nombre="EMISOR DE PRUEBA" RegimenFiscal="601"></cfdi:Emisor><cfdi:Receptor Rfc="MUL9607165C5" Nombre="MULTIASISTENCIA"></cfdi:Receptor>'
+    + `<cfdi:Conceptos><cfdi:Concepto NoIdentificacion="05" Descripcion="${desc}" Importe="11071.890000"><cfdi:Impuestos><cfdi:Traslados><cfdi:Traslado Base="11071.890000" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="1771.502400"></cfdi:Traslado></cfdi:Traslados></cfdi:Impuestos></cfdi:Concepto></cfdi:Conceptos>`
+    + '<cfdi:Impuestos TotalImpuestosTrasladados="1771.50"><cfdi:Traslados><cfdi:Traslado Base="11071.89" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="1771.50"></cfdi:Traslado></cfdi:Traslados></cfdi:Impuestos>'
+    + '<cfdi:Complemento>' + (tfd ? `<tfd:TimbreFiscalDigital Version="1.1" UUID="${TEST_UUID}" FechaTimbrado="2026-10-12T12:18:59" SelloCFD="SELLO-PRUEBA" SelloSAT="SELLOSAT-PRUEBA" xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />` : '') + '</cfdi:Complemento>'
+    + (addenda ? '<cfdi:Addenda><otra:Cosa xmlns:otra="urn:x" /></cfdi:Addenda>' : '')
+    + '</cfdi:Comprobante>';
+}
+function pipeline(xmlText, form, opts) {
+  const analysis = analyzeCfdi(xmlText, opts);
+  const val = validateForm(analysis, form);
+  let fragment = null, ins = null;
+  if (!val.errors.length) {
+    fragment = buildFragment(analysis.data, val.norm);
+    ins = insertAddenda(xmlText, analysis.data, fragment, new TextEncoder().encode(xmlText));
+  }
+  return { analysis, val, fragment, ins };
+}
+function runSelfTests(loadedText) {
+  const res = [];
+  const T = (id, name, fn) => { try { const r = fn(); res.push({ id, name, ok: !!r.ok, detail: r.detail || '' }); } catch (e) { res.push({ id, name, ok: false, detail: 'Excepción: ' + e.message }); } };
+  const has = (list, id) => list.some(i => i.id === id);
+  const base = mkTestXml();
+  const F = patch => Object.assign(casoF4481(), patch);
+  const vals = (k, v) => F({ [k]: v });
+
+  T('A1', 'Golden F-4481 (XML mínimo embebido)', () => {
+    const p = pipeline(base, F({}));
+    const expOut = base.slice(0, base.lastIndexOf('</cfdi:Comprobante>')) + GOLDEN_FRAGMENT + '</cfdi:Comprobante>';
+    const ok = p.fragment === GOLDEN_FRAGMENT && p.ins && !p.ins.errors.length && p.ins.output === expOut && !has(p.val.warnings, 'V9');
+    return { ok, detail: ok ? 'Fragmento idéntico a §10.1; sin V9' : 'El fragmento difiere de §10.1' };
+  });
+  if (loadedText) {
+    T('A1·archivo', 'Golden contra el XML cargado', () => {
+      const p = pipeline(loadedText, F({}));
+      const d = p.analysis.data;
+      if (!d || d.serie !== 'F' || d.folio !== '4481' || d.subtotalRaw !== '11071.89') return { ok: true, detail: 'El XML cargado no es F-4481; se omite' };
+      const idx = loadedText.lastIndexOf('</cfdi:Comprobante>');
+      const expOut = loadedText.slice(0, idx) + GOLDEN_FRAGMENT + loadedText.slice(idx);
+      const inB = new TextEncoder().encode(loadedText).length;
+      const ok = p.fragment === GOLDEN_FRAGMENT && p.ins && !p.ins.errors.length && p.ins.output === expOut
+        && fmt(d.subtotal) === '11071.89' && fmt(d.iva) === '1771.50' && fmt(d.total) === '12843.39' && !has(p.val.warnings, 'V9');
+      return { ok, detail: ok ? `Byte a byte: ${inB} + ${new TextEncoder().encode(GOLDEN_FRAGMENT).length} = ${p.ins.outBytes.length} bytes` : 'No coincide con el golden' };
+    });
+  }
+  T('A2', 'Vales capturados MO → Refacciones salen ordenados', () => {
+    const f = F({}); f.vales = [{ tipo: 'MO', numero: '373054', costo: '780.00' }, { tipo: 'R', numero: '3477802', costo: '2200.00' }];
+    const p = pipeline(base, f);
+    return { ok: p.fragment === GOLDEN_FRAGMENT, detail: 'Refacciones antes que Complemento MO' };
+  });
+  T('A3', '11 vales de refacciones → V3', () => {
+    const f = F({}); f.vales = Array.from({ length: 11 }, (_, i) => ({ tipo: 'R', numero: String(100 + i), costo: '1.00' }));
+    return { ok: has(pipeline(base, f).val.errors, 'V3') };
+  });
+  T('A4', 'Costo 1294.702 → V2', () => ({ ok: has(pipeline(base, vals('costoValuacion', '1294.702')).val.errors, 'V2') }));
+  T('A5', 'Costo 8,091.89 → V2', () => ({ ok: has(pipeline(base, vals('costoValuacion', '8,091.89')).val.errors, 'V2') }));
+  T('A6', 'Costo -10 → V2', () => ({ ok: has(pipeline(base, vals('costoValuacion', '-10')).val.errors, 'V2') }));
+  T('A7', 'Costo 2400 → 2400.00', () => {
+    const p = pipeline(base, vals('costoValuacion', '2400'));
+    return { ok: !!p.fragment && p.fragment.includes('NumValuacionInicial="B7834976100A" Costo="2400.00"') };
+  });
+  T('A8', 'Sin siniestro → V1', () => ({ ok: pipeline(base, vals('siniestro', '   ')).val.errors.some(e => e.id === 'V1' && e.key === 'siniestro') }));
+  T('A9', 'OrdenPago vacío → se omite', () => {
+    const p = pipeline(base, vals('ordenPago', ''));
+    return { ok: !!p.fragment && !p.fragment.includes('OrdenPago') && p.fragment.includes('Total="12843.39">') };
+  });
+  T('A10', 'Suma ≠ SubTotal → V9 (error con switch)', () => {
+    const w = pipeline(base, vals('costoValuacion', '8000.00'));
+    const e = pipeline(base, F({ costoValuacion: '8000.00', sumAsError: true }));
+    return { ok: has(w.val.warnings, 'V9') && !has(w.val.errors, 'V9') && has(e.val.errors, 'V9'), detail: 'Advertencia; error con el switch' };
+  });
+  T('A11', 'CFDI sin TFD → C3', () => ({ ok: has(pipeline(mkTestXml({ tfd: false }), F({})).val.errors, 'C3') }));
+  T('A12', 'CFDI que ya trae Addenda → C4', () => ({ ok: has(pipeline(mkTestXml({ addenda: true }), F({})).val.errors, 'C4') }));
+  T('A13', 'Proveedor "11701 " → Proveedor="11701"', () => {
+    const p = pipeline(base, vals('proveedor', '11701 '));
+    return { ok: !!p.fragment && p.fragment.includes(' Proveedor="11701" ') };
+  });
+  T('A14', 'Siniestro con & → &amp;', () => {
+    const p = pipeline(base, vals('siniestro', 'B78&349'));
+    return { ok: !!p.fragment && p.fragment.includes('Siniestro="B78&amp;349"') && !p.ins.errors.length };
+  });
+  T('A15', 'Raíz sin xmlns:xsi → se declara en ma:Multiasistencia', () => {
+    const p = pipeline(mkTestXml({ xsiRoot: false }), F({}));
+    return { ok: !!p.fragment && p.fragment.includes(`xmlns:ma="${NS.ma}" xmlns:xsi="${NS.xsi}" Version=`) && !p.ins.errors.length };
+  });
+  T('A16', 'Descripcion con &#xA; se conserva literal (P1)', () => {
+    const p = pipeline(base, F({}));
+    const n = s => (s.match(/&#xA;/g) || []).length;
+    return { ok: !!p.ins && !p.ins.errors.length && n(p.ins.output) === n(base) && n(base) > 0 };
+  });
+  T('A17', 'Costo valuación 0 → V6', () => ({ ok: has(pipeline(base, vals('costoValuacion', '0')).val.warnings, 'V6') }));
+  return res;
+}
+/*CORE-END*/
+</script>
+
+<script>
+'use strict';
+(function () {
+  const $ = id => document.getElementById(id);
+  const state = {
+    xmlBytes: null, sourceText: null, analysis: null,
+    pdfBytes: null,
+    providers: [],
+    vales: [],
+    validated: false,
+    gen: 0,
+    out: null // { xmlBytes, xmlText, pdfBytes, base }
+  };
+  let downloadsNs = null;
+  const downloadsReady = (window.claude && typeof window.claude.use === 'function')
+    ? Promise.resolve(window.claude.use('downloads')).then(ns => (downloadsNs = ns)).catch(() => null)
+    : Promise.resolve(null);
+
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const rfcMA = () => $('cfgRfcMA').value.trim() || DEFAULT_RFC_MA;
+
+  function renderMsgs(ul, list) {
+    ul.innerHTML = list.map(m => `<li class="${m.cls}"><span class="tag">${esc(m.id)}</span><span><b>${esc(m.campo)}</b> — ${esc(m.msg)}</span></li>`).join('');
+  }
+
+  // ---------- Paso 1 ----------
+  $('xmlFile').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    resetOutputs();
+    state.xmlBytes = null; state.sourceText = null; state.analysis = null;
+    $('pdfConfirm').checked = false; // la confirmación se liga al UUID
+    $('xmlStatus').className = 'status';
+    if (!f) { $('xmlStatus').textContent = ''; refreshCfdi(); return; }
+    if (!/\.xml$/i.test(f.name)) { setStatus('xmlStatus', 'El archivo debe tener extensión .xml', 'err'); refreshCfdi(); return; }
+    if (f.size > MAX_XML_BYTES) { setStatus('xmlStatus', 'El XML excede 2 MB', 'err'); refreshCfdi(); return; }
+    const buf = new Uint8Array(await f.arrayBuffer());
+    const dec = decodeXmlBytes(buf);
+    if (dec.error) { setStatus('xmlStatus', dec.error, 'err'); refreshCfdi(); return; }
+    state.xmlBytes = buf; state.sourceText = dec.text;
+    setStatus('xmlStatus', `${f.name} · ${buf.length.toLocaleString('es-MX')} bytes${dec.text.charCodeAt(0) === 0xFEFF ? ' · con BOM (se conserva)' : ''}`, 'ok');
+    refreshCfdi(true);
+  });
+  $('pdfFile').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    state.pdfBytes = null; $('pdfConfirm').checked = false;
+    resetOutputs();
+    if (!f) { $('pdfStatus').textContent = ''; updatePdfConfirm(); return; }
+    if (!/\.pdf$/i.test(f.name)) { setStatus('pdfStatus', 'El archivo debe tener extensión .pdf', 'err'); updatePdfConfirm(); return; }
+    if (f.size > MAX_PDF_BYTES) { setStatus('pdfStatus', 'El PDF excede 10 MB', 'err'); updatePdfConfirm(); return; }
+    state.pdfBytes = new Uint8Array(await f.arrayBuffer());
+    setStatus('pdfStatus', `${f.name} · ${state.pdfBytes.length.toLocaleString('es-MX')} bytes`, 'ok');
+    updatePdfConfirm();
+  });
+  $('pdfConfirm').addEventListener('change', () => { resetOutputs(); });
+  function setStatus(id, txt, cls) { const el = $(id); el.textContent = txt; el.className = 'status ' + (cls || ''); }
+  function updatePdfConfirm() {
+    const d = state.analysis && state.analysis.data;
+    const uuid = d && d.uuid ? d.uuid : '—';
+    $('pdfConfirmText').innerHTML = `Confirmo que el PDF corresponde al CFDI con UUID <span class="mono">${esc(uuid)}</span>`;
+    $('pdfConfirm').disabled = !(state.pdfBytes && d && d.uuid);
+    if ($('pdfConfirm').disabled) $('pdfConfirm').checked = false;
+  }
+
+  // ---------- Paso 2 ----------
+  function refreshCfdi(fromLoad) {
+    const ul = $('cfdiMsgs');
+    if (!state.sourceText) {
+      state.analysis = null; ul.innerHTML = '';
+      $('paso2').classList.add('disabled');
+      $('cfdiCard').innerHTML = '<p class="hint">Carga el XML timbrado para ver sus datos.</p>';
+      ['fxSubTotal', 'fxIVA', 'fxTotal'].forEach(id => $(id).value = '');
+      $('sinSug').innerHTML = ''; $('provHint').textContent = '';
+      updatePdfConfirm(); invalidate(); return;
+    }
+    const a = analyzeCfdi(state.sourceText, { rfcMultiasistencia: rfcMA() });
+    state.analysis = a;
+    renderMsgs(ul, [...a.errors.map(x => ({ ...x, cls: 'err' })), ...a.warnings.map(x => ({ ...x, cls: 'warn' }))]);
+    if (!a.errors.length && !a.warnings.length) ul.innerHTML = '<li class="ok"><span class="tag">OK</span><span>CFDI 4.0 de Ingreso timbrado, sin Addenda previa.</span></li>';
+    const d = a.data;
+    if (!d) {
+      $('paso2').classList.add('disabled');
+      $('cfdiCard').innerHTML = '<p class="hint">No fue posible leer el CFDI.</p>';
+      updatePdfConfirm(); invalidate(); return;
+    }
+    $('paso2').classList.remove('disabled');
+    const kv = (k, v, mono) => `<div><dt>${esc(k)}</dt><dd${mono ? ' class="mono"' : ''}>${esc(v || '—')}</dd></div>`;
+    const sf = d.serie || d.folio ? [d.serie, d.folio].filter(Boolean).join('-') : '—';
+    $('cfdiCard').innerHTML = `
+      <dl class="kv">
+        ${kv('Serie-Folio', sf)}${kv('Fecha', d.fecha)}${kv('UUID', d.uuid, true)}${kv('FechaTimbrado', d.fechaTimbrado)}
+        ${kv('Emisor', d.emisorRfc + ' · ' + d.emisorNombre)}${kv('Receptor', d.receptorRfc + ' · ' + d.receptorNombre)}
+        ${kv('SubTotal', d.subtotal === null ? `inválido (${d.subtotalRaw ?? 'ausente'})` : fmtMoney(d.subtotal))}
+        ${kv('IVA trasladado', d.iva === null ? 'sin IVA' : fmtMoney(d.iva))}
+        ${kv('Total', d.total === null ? `inválido (${d.totalRaw ?? 'ausente'})` : fmtMoney(d.total))}${kv('Moneda', d.moneda)}
+      </dl>
+      <h3>Conceptos</h3>
+      <table><thead><tr><th>NoIdentificacion</th><th>Descripción</th><th class="num">Importe</th></tr></thead><tbody>
+      ${d.conceptos.map(c => `<tr><td>${esc(c.noId || '—')}</td><td style="white-space:pre-line">${esc(c.desc)}</td><td class="num">${c.importe === null ? esc(c.importeRaw) : fmtMoney(c.importe)}</td></tr>`).join('') || '<tr><td colspan="3" class="hint">Sin conceptos</td></tr>'}
+      </tbody></table>`;
+    $('fxSubTotal').value = d.subtotal === null ? '' : fmt(d.subtotal);
+    $('fxIVA').value = d.iva === null ? '(se omite)' : fmt(d.iva);
+    $('fxTotal').value = d.total === null ? '' : fmt(d.total);
+    // Sugerencia de siniestro (no se autollena)
+    if (d.siniestroSugerido) {
+      $('sinSug').innerHTML = `Encontrado en la descripción de un concepto. <button class="link" id="btnUseSin">Usar ${esc(d.siniestroSugerido)}</button>`;
+      $('btnUseSin').onclick = () => { $('f_siniestro').value = d.siniestroSugerido; invalidate(); };
+    } else $('sinSug').innerHTML = '';
+    if (fromLoad) prefillProveedor();
+    updatePdfConfirm(); invalidate();
+  }
+  function prefillProveedor() {
+    const d = state.analysis && state.analysis.data;
+    if (!d) return;
+    const hit = state.providers.find(p => p.rfc.trim().toUpperCase() === d.emisorRfc.trim().toUpperCase() && p.clave.trim());
+    const cur = $('f_proveedor').value.trim();
+    if (hit && !cur) {
+      $('f_proveedor').value = hit.clave.trim();
+      $('provHint').textContent = `Prellenado desde la tabla de proveedores (${hit.rfc}).`;
+    } else if (hit && cur !== hit.clave.trim()) $('provHint').textContent = `Atención: la tabla indica la clave ${hit.clave.trim()} para ${hit.rfc}; el campo tiene ${cur}.`;
+    else if (!hit) $('provHint').textContent = `El RFC emisor ${d.emisorRfc} no está en la tabla de proveedores.`;
+    else $('provHint').textContent = '';
+  }
+  $('cfgRfcMA').addEventListener('input', () => { if (state.sourceText) refreshCfdi(false); });
+
+  // ---------- Tabla de proveedores ----------
+  function renderProviders() {
+    $('provTable').tBodies[0].innerHTML = state.providers.map((p, i) => `<tr>
+      <td><input type="text" data-prov="${i}" data-f="rfc" value="${esc(p.rfc)}"></td>
+      <td><input type="text" data-prov="${i}" data-f="clave" value="${esc(p.clave)}"></td>
+      <td><button class="small" data-delprov="${i}">Eliminar</button></td></tr>`).join('');
+  }
+  $('provTable').addEventListener('input', e => { const t = e.target; if (t.dataset.prov !== undefined) state.providers[+t.dataset.prov][t.dataset.f] = t.value; });
+  $('provTable').addEventListener('click', e => { const i = e.target.dataset.delprov; if (i !== undefined) { state.providers.splice(+i, 1); renderProviders(); } });
+  $('btnAddProv').onclick = () => { state.providers.push({ rfc: '', clave: '' }); renderProviders(); };
+
+  // ---------- Vales ----------
+  function renderVales() {
+    $('vales').innerHTML = state.vales.map((v, i) => `<div class="vale-row">
+      <select data-vale="${i}" data-f="tipo" aria-label="Tipo de vale ${i + 1}">
+        <option value="R"${v.tipo === 'R' ? ' selected' : ''}>Refacciones</option>
+        <option value="MO"${v.tipo === 'MO' ? ' selected' : ''}>Complemento MO</option></select>
+      <input type="text" data-vale="${i}" data-f="numero" data-key="vale-${i}-numero" placeholder="Número *" value="${esc(v.numero)}" aria-label="Número de vale ${i + 1}">
+      <input type="text" data-vale="${i}" data-f="costo" data-key="vale-${i}-costo" placeholder="Costo * 0.00" inputmode="decimal" value="${esc(v.costo)}" aria-label="Costo de vale ${i + 1}">
+      <button class="small" data-delvale="${i}">Eliminar</button></div>`).join('') || '<p class="hint">Sin vales capturados.</p>';
+    updateValeCount();
+  }
+  function updateValeCount() {
+    const r = state.vales.filter(v => v.tipo === 'R').length, mo = state.vales.filter(v => v.tipo === 'MO').length;
+    $('valeCount').textContent = `Refacciones ${r}/${MAX_VALES} · Complemento MO ${mo}/${MAX_VALES}`;
+  }
+  $('vales').addEventListener('input', e => { const t = e.target; if (t.dataset.vale !== undefined) { state.vales[+t.dataset.vale][t.dataset.f] = t.value; updateValeCount(); invalidate(); } });
+  $('vales').addEventListener('change', e => { const t = e.target; if (t.tagName === 'SELECT') { state.vales[+t.dataset.vale].tipo = t.value; updateValeCount(); invalidate(); } });
+  $('vales').addEventListener('click', e => { const i = e.target.dataset.delvale; if (i !== undefined) { state.vales.splice(+i, 1); renderVales(); invalidate(); } });
+  $('btnAddVale').onclick = () => { state.vales.push({ tipo: 'R', numero: '', costo: '' }); renderVales(); invalidate(); };
+
+  ['f_proveedor', 'f_siniestro', 'f_ordenPago', 'f_numValuacion', 'f_costoValuacion'].forEach(id => $(id).addEventListener('input', invalidate));
+  ['optSchema', 'optSumErr'].forEach(id => $(id).addEventListener('change', invalidate));
+
+  $('btnCaso').onclick = () => {
+    const c = casoF4481();
+    $('f_proveedor').value = c.proveedor; $('f_siniestro').value = c.siniestro; $('f_ordenPago').value = c.ordenPago;
+    $('f_numValuacion').value = c.numValuacion; $('f_costoValuacion').value = c.costoValuacion;
+    state.vales = c.vales.map(v => ({ ...v })); renderVales();
+    $('provHint').textContent = '';
+    invalidate();
+  };
+
+  function readForm() {
+    return {
+      proveedor: $('f_proveedor').value, siniestro: $('f_siniestro').value, ordenPago: $('f_ordenPago').value,
+      numValuacion: $('f_numValuacion').value, costoValuacion: $('f_costoValuacion').value,
+      vales: state.vales.map(v => ({ ...v })),
+      includeSchemaLocation: $('optSchema').checked, sumAsError: $('optSumErr').checked
+    };
+  }
+
+  // ---------- Paso 4 ----------
+  function invalidate() {
+    state.validated = false;
+    $('btnGenerar').disabled = true;
+    $('genHint').textContent = 'Valida primero; Generar se habilita si no hay errores.';
+    $('fragBox').classList.add('hidden'); $('fragPre').textContent = '';
+    if ($('valMsgs').children.length) $('valMsgs').innerHTML = '<li class="info"><span class="tag">…</span><span>Hubo cambios; vuelve a validar.</span></li>';
+    resetOutputs();
+  }
+  function resetOutputs() {
+    state.gen++;
+    state.out = null;
+    $('outBox').classList.add('hidden');
+    $('dlMsg').textContent = '';
+  }
+  function markFields(list) {
+    document.querySelectorAll('input.bad, input.warnf').forEach(el => el.classList.remove('bad', 'warnf'));
+    for (const it of list) {
+      if (!it.key) continue;
+      const el = document.querySelector(`[data-key="${it.key}"]`);
+      if (el) el.classList.add(it.cls === 'err' ? 'bad' : 'warnf');
+    }
+  }
+  function doValidate() {
+    if (!state.analysis) {
+      const list = [{ id: 'XML', campo: 'XML timbrado', msg: 'Carga el XML timbrado (paso 1)', cls: 'err' }];
+      renderMsgs($('valMsgs'), list); markFields([]); $('fragBox').classList.add('hidden');
+      return null;
+    }
+    const v = validateForm(state.analysis, readForm());
+    const list = [...v.errors.map(x => ({ ...x, cls: 'err' })), ...v.warnings.map(x => ({ ...x, cls: 'warn' }))];
+    renderMsgs($('valMsgs'), list);
+    if (!list.length) $('valMsgs').innerHTML = '<li class="ok"><span class="tag">OK</span><span>Sin errores ni advertencias.</span></li>';
+    else if (!v.errors.length) $('valMsgs').insertAdjacentHTML('afterbegin', '<li class="ok"><span class="tag">OK</span><span>Sin errores. Revisa las advertencias antes de generar.</span></li>');
+    markFields(list);
+    if (!v.errors.length) {
+      $('fragPre').textContent = buildFragment(state.analysis.data, v.norm);
+      $('fragBox').classList.remove('hidden');
+    } else $('fragBox').classList.add('hidden');
+    return v;
+  }
+  $('btnValidar').onclick = () => {
+    resetOutputs();
+    const v = doValidate();
+    state.validated = !!v && !v.errors.length;
+    $('btnGenerar').disabled = !state.validated;
+    $('genHint').textContent = state.validated ? 'Listo para generar.' : 'Corrige los errores para habilitar Generar.';
+  };
+
+  $('btnGenerar').onclick = async () => {
+    const v = doValidate();
+    if (!v || v.errors.length) { $('btnGenerar').disabled = true; return; }
+    const d = state.analysis.data;
+    const fragment = buildFragment(d, v.norm);
+    const ins = insertAddenda(state.sourceText, d, fragment, state.xmlBytes);
+    const post = [];
+    $('outBox').classList.remove('hidden');
+    $('btnDlPdf').disabled = true; $('btnOpenPdf').disabled = true;
+    if (ins.errors.length) {
+      renderMsgs($('postMsgs'), ins.errors.map(x => ({ ...x, cls: 'err' })));
+      $('postMsgs').insertAdjacentHTML('afterbegin', '<li class="err"><span class="tag">BLOQUEO</span><span>Fallaron las verificaciones posteriores; no se permite descargar.</span></li>');
+      $('btnDlXml').disabled = true; $('btnOpenXml').disabled = true;
+      $('outXml').value = ''; state.out = null;
+      return;
+    }
+    const base = fileBase(d);
+    const myGen = ++state.gen;
+    const out = { xmlBytes: ins.outBytes, xmlText: ins.output, pdfBytes: null, base };
+    state.out = out;
+    $('btnDlXml').disabled = false; $('btnOpenXml').disabled = false;
+    $('outXml').value = ins.output;
+    $('outName').textContent = `${base}.xml · ${ins.outBytes.length.toLocaleString('es-MX')} bytes`;
+    post.push({ id: 'XML', campo: `${base}.xml`, msg: `Generado. P1–P5 correctos: parte fiscal idéntica byte a byte (${state.xmlBytes.length.toLocaleString('es-MX')} → ${ins.outBytes.length.toLocaleString('es-MX')} bytes).`, cls: 'ok' });
+
+    if (!state.pdfBytes) post.push({ id: 'PDF', campo: 'PDF original', msg: 'No se cargó el PDF original; solo se generó el XML.', cls: 'info' });
+    else if (!$('pdfConfirm').checked) post.push({ id: 'PDF', campo: 'Confirmación del PDF', msg: `Marca la casilla "Confirmo que el PDF corresponde al CFDI con UUID ${d.uuid}" y vuelve a generar.`, cls: 'err', key: null });
+    else if (!window.PDFLib) post.push({ id: 'PDF', campo: 'pdf-lib', msg: 'No se pudo cargar pdf-lib desde cdnjs; el PDF no se generó.', cls: 'err' });
+    else {
+      $('btnGenerar').disabled = true;
+      let r = null, err = null;
+      try { r = await buildPdf(window.PDFLib, state.pdfBytes, d, v.norm); } catch (e) { err = e; }
+      if (myGen !== state.gen) return; // hubo cambios mientras se generaba: se descarta
+      $('btnGenerar').disabled = !state.validated;
+      try {
+        if (err) throw err;
+        out.pdfBytes = r.bytes;
+        $('btnDlPdf').disabled = false; $('btnOpenPdf').disabled = false;
+        post.push({ id: 'PDF', campo: `${base}.pdf`, msg: `Generado: ${r.originalCount} página(s) originales sin cambios + ${r.added} hoja(s) de Addenda.`, cls: 'ok' });
+      } catch (e) {
+        post.push({ id: 'PDF', campo: 'PDF original', msg: e.message, cls: 'err' });
+      }
+    }
+    renderMsgs($('postMsgs'), post);
+  };
+
+  // ---------- Descargas ----------
+  const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_TABLE[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function zipStore(name, data) { // ZIP sin compresión: el XML va byte a byte
+    const nm = new TextEncoder().encode(name), crc = crc32(data), sz = data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true); lh.setUint16(12, 0x0021, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, sz, true); lh.setUint32(22, sz, true); lh.setUint16(26, nm.length, true);
+    const cd = new DataView(new ArrayBuffer(46));
+    cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true); cd.setUint16(8, 0x0800, true); cd.setUint16(14, 0x0021, true);
+    cd.setUint32(16, crc, true); cd.setUint32(20, sz, true); cd.setUint32(24, sz, true); cd.setUint16(28, nm.length, true);
+    const cdOff = 30 + nm.length + sz;
+    const eo = new DataView(new ArrayBuffer(22));
+    eo.setUint32(0, 0x06054b50, true); eo.setUint16(8, 1, true); eo.setUint16(10, 1, true);
+    eo.setUint32(12, 46 + nm.length, true); eo.setUint32(16, cdOff, true);
+    return new Blob([lh.buffer, nm, data, cd.buffer, nm, eo.buffer], { type: 'application/zip' });
+  }
+  function anchorDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+  async function offer(kind) {
+    if (!state.out) return;
+    const isXml = kind === 'xml';
+    const bytes = isXml ? state.out.xmlBytes : state.out.pdfBytes;
+    if (!bytes) return;
+    const filename = `${state.out.base}.${kind}`;
+    const blob = new Blob([bytes], { type: isXml ? 'application/xml' : 'application/pdf' });
+    const msg = $('dlMsg'); msg.className = 'status'; msg.textContent = 'Preparando descarga…';
+    const dl = downloadsNs || await downloadsReady;
+    if (dl) {
+      try { await dl.save({ filename, data: blob }); msg.className = 'status ok'; msg.textContent = `Guardado: ${filename}`; return; }
+      catch (e) {
+        const code = e && e.code;
+        if (code === 'declined') { msg.textContent = 'Descarga cancelada.'; return; }
+        if (code === 'rate_limited') { msg.textContent = 'Hay una confirmación de descarga abierta; inténtalo de nuevo en un momento.'; return; }
+        if (code === 'extension_not_enabled') {
+          msg.textContent = isXml ? 'Formato no disponible en este visor; usa "Abrir XML en pestaña nueva" o copia el XML del cuadro de abajo.' : 'Formato no disponible en este visor; usa "Abrir PDF en pestaña nueva".';
+          return;
+        }
+        if (isXml && code === 'rejected_extension') {
+          try {
+            await dl.save({ filename: `${state.out.base}.zip`, data: zipStore(filename, bytes) });
+            msg.className = 'status ok'; msg.textContent = `Este visor no permite archivos .xml; se guardó ${state.out.base}.zip con el XML exacto (sin compresión).`; return;
+          } catch (e2) { if (e2 && e2.code === 'declined') { msg.textContent = 'Descarga cancelada.'; return; } }
+        }
+      }
+    }
+    try { anchorDownload(blob, filename); } catch (e) { /* noop */ }
+    msg.className = 'status';
+    msg.textContent = isXml
+      ? 'Si la descarga no inicia, usa "Abrir XML en pestaña nueva" o copia el XML del cuadro de abajo.'
+      : 'Si la descarga no inicia, usa "Abrir PDF en pestaña nueva".';
+  }
+  function openTab(kind) {
+    if (!state.out) return;
+    const bytes = kind === 'xml' ? state.out.xmlBytes : state.out.pdfBytes;
+    const url = URL.createObjectURL(new Blob([bytes], { type: kind === 'xml' ? 'application/xml' : 'application/pdf' }));
+    let w = null; try { w = window.open(url, '_blank'); if (w) w.opener = null; } catch (e) { w = null; }
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+    const msg = $('dlMsg');
+    if (!w) { msg.className = 'status'; msg.innerHTML = `El visor bloqueó la pestaña nueva. <a href="${url}" target="_blank" rel="noopener">Abrir enlace directo</a>${kind === 'xml' ? ' o copia el XML del cuadro de abajo' : ''}.`; }
+  }
+  $('btnDlXml').onclick = () => offer('xml');
+  $('btnDlPdf').onclick = () => offer('pdf');
+  $('btnOpenXml').onclick = () => openTab('xml');
+  $('btnOpenPdf').onclick = () => openTab('pdf');
+
+  async function copyText(text, msgId) {
+    const el = $(msgId);
+    try { await navigator.clipboard.writeText(text); el.textContent = 'Copiado.'; }
+    catch (e) {
+      const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      ta.remove();
+      el.textContent = ok ? 'Copiado.' : 'No se pudo copiar; selecciona el texto manualmente.';
+    }
+    setTimeout(() => { el.textContent = ''; }, 3000);
+  }
+  $('btnCopyFrag').onclick = () => copyText($('fragPre').textContent, 'copyFragMsg');
+  $('btnCopyXml').onclick = () => copyText($('outXml').value, 'copyXmlMsg');
+
+  // ---------- Autopruebas ----------
+  $('btnTests').onclick = () => {
+    const res = runSelfTests(state.sourceText);
+    const ok = res.filter(r => r.ok).length;
+    $('testSummary').className = 'status ' + (ok === res.length ? 'ok' : 'err');
+    $('testSummary').textContent = `${ok}/${res.length} correctas`;
+    $('testList').innerHTML = res.map(r => `<li class="${r.ok ? 'ok' : 'err'}"><span class="tag">${r.ok ? '✔' : '✘'} ${esc(r.id)}</span><span>${esc(r.name)}${r.detail ? ` <span class="hint">· ${esc(r.detail)}</span>` : ''}</span></li>`).join('');
+  };
+
+  renderProviders(); renderVales();
+})();
+</script>
+</body>
+</html>
