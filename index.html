@@ -232,7 +232,7 @@ aside li{margin-bottom:6px}
   </section>
   <section class="card">
     <h2>Autopruebas</h2>
-    <p class="hint" style="margin-top:0">Ejecuta A1–A17 en memoria. A1 usa un XML mínimo embebido; si cargaste el XML de F-4481, también se prueba contra ese archivo.</p>
+    <p class="hint" style="margin-top:0">Ejecuta A1–A18 en memoria. A1 usa un XML mínimo embebido; si cargaste el XML de F-4481, también se prueba contra ese archivo.</p>
     <button id="btnTests">Ejecutar autopruebas</button>
     <div class="status" id="testSummary"></div>
     <ul class="msgs tests" id="testList"></ul>
@@ -377,7 +377,7 @@ function analyzeCfdi(sourceText, { rfcMultiasistencia = DEFAULT_RFC_MA } = {}) {
     const raw = attr(c, 'Importe');
     const cents = toCents(raw, { allowExtraZeros: true });
     const desc = attr(c, 'Descripcion');
-    if (cents === null) r.errors.push(issue('IMP', `Concepto ${attr(c, 'NoIdentificacion') || conceptos.length + 1}/@Importe`, `Importe inválido o con más de 2 decimales significativos: "${raw}"`));
+    if (cents === null) r.warnings.push(issue('IMP', `Concepto ${attr(c, 'NoIdentificacion') || conceptos.length + 1}/@Importe`, `Importe con más de 2 decimales significativos o inválido: "${raw}". Se muestra tal cual; no afecta la Addenda`));
     if (!siniestroSugerido) { const m = SINIESTRO_RE.exec(desc); if (m) siniestroSugerido = m[1]; }
     conceptos.push({ noId: attr(c, 'NoIdentificacion'), desc, importeRaw: raw, importe: cents });
   }
@@ -464,7 +464,7 @@ function validateForm(analysis, form) {
       (n.sumAsError ? errors : warnings).push(it);
     }
   }
-  for (const w of analysis.warnings) if (w.id === 'C5') warnings.push(issue('V10', w.campo, w.msg));
+  for (const w of analysis.warnings) warnings.push(w.id === 'C5' ? issue('V10', w.campo, w.msg) : w);
   return { errors, warnings, norm: n };
 }
 
@@ -831,6 +831,10 @@ function runSelfTests(loadedText) {
     return { ok: !!p.ins && !p.ins.errors.length && n(p.ins.output) === n(base) && n(base) > 0 };
   });
   T('A17', 'Costo valuación 0 → V6', () => ({ ok: has(pipeline(base, vals('costoValuacion', '0')).val.warnings, 'V6') }));
+  T('A18', 'Concepto con 6 decimales significativos → advertencia, no bloquea', () => {
+    const p = pipeline(base.replace('Importe="11071.890000"', 'Importe="11071.890123"'), F({}));
+    return { ok: has(p.val.warnings, 'IMP') && !has(p.val.errors, 'IMP') && p.fragment === GOLDEN_FRAGMENT };
+  });
   return res;
 }
 /*CORE-END*/
